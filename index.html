@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MindMeadows: Relaxing Game for Healing</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(120deg, #ffe9ec, #fce4ec, #f3e5f5);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #start-screen, #game-screen, #activity-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 90%;
+      max-width: 700px;
+      text-align: center;
+    }
+
+    #start-screen.active, #game-screen.active, #activity-screen.active {
+      display: flex;
+    }
+
+    h1 {
+      color: #7b1fa2;
+      text-shadow: 2px 2px #fff;
+      margin-bottom: 0.3em;
+    }
+
+    #drawing-board {
+      border: 3px solid #aaa;
+      border-radius: 12px;
+      cursor: crosshair;
+      background-color: #fff;
+      width: 100%;
+      max-width: 600px;
+      height: 400px;
+    }
+
+    .controls {
+      margin: 15px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .top-controls {
+      margin-bottom: 10px;
+    }
+
+    .bottom-controls {
+      margin-top: 10px;
+    }
+
+    button, input[type="color"], select {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      background: linear-gradient(45deg, #ff4081, #7b1fa2);
+      color: white;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease, transform 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    .thank-you {
+      margin-top: 20px;
+      color: #555;
+      font-size: 16px;
+    }
+
+    audio {
+      display: block;
+      margin-top: 10px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    textarea {
+      width: 80%;
+      height: 150px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+      font-size: 16px;
+      margin: 10px 0;
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="start-screen" class="active">
+    <h1>🧠 MindMeadows</h1>
+    <p style="font-size: 20px; color: #555; max-width: 500px; margin: auto;">
+      Welcome to your healing space. Tap into creativity and peace with relaxing music, journaling, breathing, painting, and drawing activities.
+    </p>
+    <button onclick="startGame()">🎮 Start Game</button>
+  </div>
+
+  <div id="game-screen">
+    <h1>MindMeadows: Relax, Draw, Heal</h1>
+
+    <div class="controls top-controls">
+      <label>Color: <input type="color" id="colorPicker" value="#7b1fa2" title="Pick your brush color" /></label>
+      <label>Gradient Color: <input type="color" id="gradientColor" value="#ff4081" title="Pick a second color for gradient" /></label>
+      <select id="shapeSelect">
+        <option value="">Free Draw</option>
+        <option value="line">Line</option>
+        <option value="circle">Circle</option>
+        <option value="square">Square</option>
+        <option value="triangle">Triangle</option>
+      </select>
+    </div>
+
+    <canvas id="drawing-board" width="600" height="400"></canvas>
+
+    <div class="controls bottom-controls">
+      <button onclick="clearCanvas()">Clear Canvas</button>
+      <button onclick="saveDrawing()">Save Drawing</button>
+      <button onclick="nextActivity()">Next Activity ➡️</button>
+    </div>
+
+    <audio controls loop autoplay>
+      <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2e2b3dc53a.mp3?filename=relaxing-music-ambient-111527.mp3" type="audio/mpeg" />
+      Your browser does not support the audio element.
+    </audio>
+
+    <div class="thank-you">
+      🌿 Thank you for visiting MindMeadows. Take a deep breath. You’re doing better than you think.
+    </div>
+  </div>
+
+  <div id="activity-screen">
+    <h1>✨ Your Healing Space</h1>
+    <button onclick="showBreathing()">🧘 Breathing Exercise</button>
+    <button onclick="showJournal()">📓 Journal</button>
+    <button onclick="showAffirmation()">💖 Positive Message</button>
+    <button onclick="backToGame()">⬅️ Back to Drawing</button>
+    <div id="activity-content" style="margin-top: 20px; text-align: center;"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('drawing-board');
+    const ctx = canvas.getContext('2d');
+    const colorPicker = document.getElementById('colorPicker');
+    const gradientColor = document.getElementById('gradientColor');
+    const shapeSelect = document.getElementById('shapeSelect');
+    const startScreen = document.getElementById('start-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const activityScreen = document.getElementById('activity-screen');
+    const activityContent = document.getElementById('activity-content');
+
+    function startGame() {
+      startScreen.classList.remove('active');
+      gameScreen.classList.add('active');
+    }
+
+    let drawing = false;
+    let startX, startY;
+
+    canvas.addEventListener('mousedown', (e) => {
+      drawing = true;
+      const rect = canvas.getBoundingClientRect();
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
+      if (shapeSelect.value === '') {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+      }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (!drawing) return;
+      drawing = false;
+      const rect = canvas.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      const endY = e.clientY - rect.top;
+
+      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+      gradient.addColorStop(0, colorPicker.value);
+      gradient.addColorStop(1, gradientColor.value);
+      ctx.strokeStyle = gradient;
+      ctx.fillStyle = gradient;
+
+      const width = endX - startX;
+      const height = endY - startY;
+
+      switch (shapeSelect.value) {
+        case 'line':
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          break;
+        case 'circle':
+          const radius = Math.sqrt(width * width + height * height) / 2;
+          ctx.beginPath();
+          ctx.arc(startX + width / 2, startY + height / 2, radius, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'square':
+          ctx.fillRect(startX, startY, width, height);
+          break;
+        case 'triangle':
+          ctx.beginPath();
+          ctx.moveTo(startX + width / 2, startY);
+          ctx.lineTo(startX, startY + height);
+          ctx.lineTo(startX + width, startY + height);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        default:
+          break;
+      }
+      ctx.beginPath();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!drawing || shapeSelect.value !== '') return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      ctx.strokeStyle = colorPicker.value;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    });
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+    }
+
+    function saveDrawing() {
+      const link = document.createElement('a');
+      link.download = 'mindmeadows_drawing.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    function nextActivity() {
+      gameScreen.classList.remove('active');
+      activityScreen.classList.add('active');
+      activityContent.innerHTML = '';
+    }
+
+    function backToGame() {
+      activityScreen.classList.remove('active');
+      gameScreen.classList.add('active');
+    }
+
+    function showBreathing() {
+      activityContent.innerHTML = `
+        <h2>🌬️ Breathe In... Hold... Breathe Out</h2>
+        <p>Try this: Breathe in for 4 seconds, hold for 4, breathe out for 4. Repeat 4 times.</p>
+      `;
+    }
+
+    function showJournal() {
+      activityContent.innerHTML = `
+        <h2>📝 Your Journal</h2>
+        <textarea placeholder="Write your thoughts here..."></textarea>
+      `;
+    }
+
+    function showAffirmation() {
+      const affirmations = [
+        "You are enough just as you are.",
+        "Every breath you take brings peace.",
+        "You are stronger than you think.",
+        "It's okay to take a break."
+      ];
+      const quote = affirmations[Math.floor(Math.random() * affirmations.length)];
+      activityContent.innerHTML = `<h2>💖 Positive Message</h2><p>${quote}</p>`;
+    }
+  </script>
+</body>
+</html>
+
+
